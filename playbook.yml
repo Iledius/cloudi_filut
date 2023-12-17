@@ -46,9 +46,23 @@
           command: nginx -t
           when: inventory_hostname in ['vm2', 'vm3', 'vm4']
 
-        - name: Restart and Enable Nginx Service on Web Servers
+        - name: Enable Nginx Service on Web Servers
           service:
             name: nginx
-            state: restarted
             enabled: yes
+          when: inventory_hostname in ['vm2', 'vm3', 'vm4']
+
+        - name: Start Nginx Service on Web Servers
+          service:
+            name: nginx
+            state: started
+          when: inventory_hostname in ['vm2', 'vm3', 'vm4']
+
+        - name: Allow HTTP traffic from Load Balancer
+          firewalld:
+            port: 80/tcp
+            permanent: yes
+            state: enabled
+            immediate: yes
+            source: [86.50.228.219]
           when: inventory_hostname in ['vm2', 'vm3', 'vm4']
