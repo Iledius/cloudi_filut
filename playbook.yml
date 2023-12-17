@@ -1,0 +1,54 @@
+---
+- name: Configure HTTP Load Balancer and Web Servers
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install Nginx
+      yum:
+        name: nginx
+        state: latest
+
+    - name: Configure Nginx as Load Balancer on VM1
+      block:
+        - name: Copy nginx_prox.conf to Load Balancer
+          copy:
+            src: ./files/nginx_prox.conf
+            dest: /etc/nginx/nginx.conf
+          when: inventory_hostname == 'vm1'
+
+        - name: Check Nginx Configuration
+          command: nginx -t
+          when: inventory_hostname == 'vm1'
+
+        - name: Restart and Enable Nginx Service on Load Balancer
+          service:
+            name: nginx
+            state: restarted
+            enabled: yes
+      when: inventory_hostname == 'vm1'
+
+    - name: Configure Nginx Web Servers on VMs 2-4
+      block:
+        - name: Copy nginx.conf to Web Servers
+          copy:
+            src: ./files/nginx.conf
+            dest: /etc/nginx/nginx.conf
+          when: inventory_hostname in ['vm2', 'vm3', 'vm4']
+
+        - name: Copy index.html.j2 to Web Servers
+          template:
+            src: ./templates/index.html.j2
+            dest: /usr/share/nginx/html/index.html
+          when: inventory_hostname in ['vm2', 'vm3', 'vm4']
+
+        - name: Check Nginx Configuration on Web Servers
+          command: nginx -t
+          when: inventory_hostname in ['vm2', 'vm3', 'vm4']
+
+        - name: Restart and Enable Nginx Service on Web Servers
+          service:
+            name: nginx
+            state: restarted
+            enabled: yes
+          when: inventory_hostname in ['vm2', 'vm3', 'vm4']
